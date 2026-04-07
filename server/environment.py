@@ -144,7 +144,7 @@ class TelescopeSchedulingEnvironment(Environment):
         return self._state
 
     def compute_grade(self) -> float:
-        """Server-side grader — deterministic, bounded to [0.0, 1.0].
+        """Server-side grader — deterministic, bounded to (0.0, 1.0) exclusive.
 
         Denominators (oracle upper bounds measured empirically with greedy policy):
           easy   — 20 planets total in dataset
@@ -152,15 +152,18 @@ class TelescopeSchedulingEnvironment(Environment):
           hard   — deadline_score: 3 soft-deadline targets
                    priority_score: 133 = oracle value for 18 steps greedy-deadline policy
         """
+        _EPS = 1e-4
         state = self._state
         if state.task_id == "easy":
-            return round(min(state.n_observed_tonight / 20.0, 1.0), 4)
+            raw = min(state.n_observed_tonight / 20.0, 1.0)
         elif state.task_id == "medium":
-            return round(min(state.total_priority_observed / 182.0, 1.0), 4)
+            raw = min(state.total_priority_observed / 182.0, 1.0)
         else:  # hard
             deadline_score = min(getattr(state, "deadlines_met_before_cutoff", 0) / 3.0, 1.0)
             priority_score = min(state.total_priority_observed / 133.0, 1.0)
-            return round(0.6 * deadline_score + 0.4 * priority_score, 4)
+            raw = 0.6 * deadline_score + 0.4 * priority_score
+        # Scores must be strictly within (0, 1) per OpenEnv validator requirements
+        return round(max(_EPS, min(raw, 1.0 - _EPS)), 4)
 
     def get_tasks(self) -> list:
         """Return metadata for all supported tasks."""
