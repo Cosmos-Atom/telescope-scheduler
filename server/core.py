@@ -129,13 +129,13 @@ class _TelescopeCore:
         # Clamp to valid range — prevents IndexError on out-of-bounds LLM output
         action_target = max(0, min(self.num_planets, action_target))
 
-        reward = 0.0
+        _EPS = 1e-4  # all rewards must be strictly in (0, 1) per validator
+        reward = _EPS
         info: dict = {}
 
         if action_target == self.num_planets:
-            # Wait action — small negative reward intentional to discourage idle steps.
-            # Slightly outside [0,1] by design; GRPO uses relative ranking so this is fine.
-            reward = -5.0 / REWARD_SCALE
+            # Wait action — small penalty to discourage idle steps.
+            reward = _EPS
             info["action_type"] = "wait"
             info["planet_name"] = None
             info["reward_components"] = {}
@@ -154,8 +154,7 @@ class _TelescopeCore:
             if observable:
                 if planet.observed_tonight:
                     # Already observed — no additional scientific value.
-                    # Return 0 reward to align cumulative reward with the unique-observation grader.
-                    reward = 0.0
+                    reward = _EPS
                     info["action_type"] = "observe"
                     info["planet_name"] = str(planet.pl_name)
                     info["reward_components"] = {
@@ -215,7 +214,7 @@ class _TelescopeCore:
                         "normalised": round(reward, 4),
                     }
             else:
-                reward = -15.0 / REWARD_SCALE
+                reward = _EPS
                 info["action_type"] = "invalid"
                 info["planet_name"] = None
                 info["reason"] = "below_horizon" if not visible else "bad_weather"
@@ -244,6 +243,9 @@ class _TelescopeCore:
                     dl = pd.to_datetime(planet.deadline_time)
                     if dl <= self.current_time:
                         reward -= float(planet.priority_score) * 5.0 / REWARD_SCALE
+
+        # Clamp reward to strictly (0, 1) — validator rejects 0.0, negatives, and >= 1.0
+        reward = round(max(_EPS, min(reward, 1.0 - _EPS)), 4)
 
         self.episode_reward += reward
         return reward, self.done, info
