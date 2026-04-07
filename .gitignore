@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.env
+.venv
+venv/
+
+# uv
+.uv/
+
+# IDE / tools
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Outputs (keep placeholder)
+outputs/*
+!outputs/.gitkeep
