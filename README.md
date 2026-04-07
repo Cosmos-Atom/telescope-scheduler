@@ -102,15 +102,15 @@ Expected output (Qwen/Qwen3-8B baseline):
 [START] task=easy env=telescope-scheduler model=Qwen/Qwen3-8B
 [STEP] step=1 action=1 reward=0.33 done=false error=null
 ...
-[END] success=true steps=44 score=0.750 rewards=...
+[END] success=true steps=44 score=0.75 rewards=...
 
 [START] task=medium env=telescope-scheduler model=Qwen/Qwen3-8B
 ...
-[END] success=true steps=32 score=0.640 rewards=...
+[END] success=true steps=32 score=0.64 rewards=...
 
 [START] task=hard env=telescope-scheduler model=Qwen/Qwen3-8B
 ...
-[END] success=true steps=18 score=0.580 rewards=...
+[END] success=true steps=18 score=0.58 rewards=...
 ```
 
 ### 4. Docker
@@ -152,11 +152,11 @@ docker run -p 7860:7860 telescope-scheduler
 
 ## Scoring
 
-Scores are computed server-side in `TelescopeSchedulingEnvironment.compute_grade()` and also available via the `/grade?task_id=<task>` HTTP endpoint. `inference.py` calls the same logic client-side via `compute_grade()`:
+Scores are computed server-side in `TelescopeSchedulingEnvironment.compute_grade()` and also available via the `POST /grade` HTTP endpoint (accepts a `TelescopeState` JSON body, as returned by `GET /state`). `inference.py` calls the same logic client-side via `compute_grade()`:
 
 | Task | Formula | Oracle upper bound |
 |------|---------|-------------------|
-| easy | `min(n_observed_tonight / 20, 1.0)` | 1.000 (observe all 20 planets) |
+| easy | `min(n_observed_tonight / 20, 1.0)` | 0.950 (19/20 — HD 108874 b never rises above 30°) |
 | medium | `min(total_priority_observed / 182, 1.0)` | 1.000 (greedy priority policy) |
 | hard | `0.6 × (deadlines_met / 3) + 0.4 × min(priority / 133, 1.0)` | 1.000 |
 

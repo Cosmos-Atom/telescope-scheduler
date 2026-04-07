@@ -34,7 +34,7 @@ ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 
 MAX_STEPS = 44
 TEMPERATURE = 0.2
-MAX_TOKENS = 128     # allow reasoning model <think> preamble before the integer
+MAX_TOKENS = 1024    # allow reasoning model <think> preamble before the integer
 FALLBACK_TARGET = 20  # wait (num_planets = 20, so wait = index 20)
 
 SYSTEM_PROMPT = textwrap.dedent("""

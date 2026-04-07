@@ -231,12 +231,18 @@ class _TelescopeCore:
         # Termination
         if self.current_time >= self.sunrise or self.step_count >= self.max_steps:
             self.done = True
-            # End-of-night missed-deadline penalty — only for targets that were
+            # End-of-night missed-deadline penalty — only for the hard task
+            # (deadline_step_cutoff is set) and only for targets that were
             # actually reachable (visible at some point during the episode).
             for _, planet in self.planets.iterrows():
-                if pd.notna(planet.get("deadline_time")) and not planet.observed_tonight:
+                if (
+                    pd.notna(planet.get("deadline_time"))
+                    and not planet.observed_tonight
+                    and self.deadline_step_cutoff is not None
+                    and planet.get("was_visible_tonight", False)
+                ):
                     dl = pd.to_datetime(planet.deadline_time)
-                    if dl <= self.current_time and planet.get("was_visible_tonight", False):
+                    if dl <= self.current_time:
                         reward -= float(planet.priority_score) * 5.0 / REWARD_SCALE
 
         self.episode_reward += reward
