@@ -5,6 +5,11 @@ colorFrom: blue
 colorTo: purple
 sdk: docker
 pinned: false
+tags:
+  - openenv
+  - reinforcement-learning
+  - scheduling
+  - astronomy
 ---
 
 # Telescope Scheduling Environment
