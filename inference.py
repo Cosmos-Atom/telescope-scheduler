@@ -34,7 +34,7 @@ ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 
 MAX_STEPS = 44
 TEMPERATURE = 0.2
-MAX_TOKENS = 10      # only a single integer needed
+MAX_TOKENS = 128     # allow reasoning model <think> preamble before the integer
 FALLBACK_TARGET = 20  # wait (num_planets = 20, so wait = index 20)
 
 SYSTEM_PROMPT = textwrap.dedent("""
@@ -72,7 +72,7 @@ def compute_grade(task_id: str, state) -> float:
     elif task_id == "medium":
         return round(min(state.total_priority_observed / 182.0, 1.0), 4)
     else:  # hard
-        deadline_score = getattr(state, "deadlines_met_before_cutoff", 0) / 3.0
+        deadline_score = min(getattr(state, "deadlines_met_before_cutoff", 0) / 3.0, 1.0)
         priority_score = min(state.total_priority_observed / 133.0, 1.0)
         return round(0.6 * deadline_score + 0.4 * priority_score, 4)
 
