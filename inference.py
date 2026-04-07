@@ -59,9 +59,9 @@ def parse_target(response_text: str) -> int:
 
 
 def compute_grade(task_id: str, state) -> float:
-    """Client-side grader — deterministic, matches server task definitions.
+    """Client-side grader — mirrors TelescopeSchedulingEnvironment.compute_grade() server-side.
 
-    Denominators (oracle upper bounds measured empirically with greedy policy):
+    Denominators (oracle upper bounds reproducible via scripts/compute_oracle.py):
       easy   — 20 planets total in dataset
       medium — 182 = max priority sum achievable in 32 steps (greedy, seed=7)
       hard   — deadline_score: 3 soft-deadline targets
@@ -97,7 +97,7 @@ def log_step(step: int, action: int, reward: float, done: bool, error) -> None:
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}",
         flush=True,
     )
 

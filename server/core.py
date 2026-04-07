@@ -109,6 +109,7 @@ class _TelescopeCore:
         self.planets["observed_tonight"] = False
         self.planets["times_observed"] = 0
         self.planets["soft_deadline_step"] = None
+        self.planets["was_visible_tonight"] = False
         self.episode_reward = 0.0
         self.done = False
         self.step_count = 0
@@ -147,58 +148,72 @@ class _TelescopeCore:
             visible = alt > 30
             observable = visible and (self.weather_state != 2)
 
+            if visible:
+                self.planets.at[action_target, "was_visible_tonight"] = True
+
             if observable:
-                base_reward = float(planet.priority_score) * 10.0
-                quality_factor = 1.0
-
-                if self.weather_state == 1:
-                    quality_factor *= 0.7
-                if alt < 45:
-                    quality_factor *= 0.6
-                elif alt > 70:
-                    quality_factor *= 1.2
-                if airmass > 2.0:
-                    quality_factor *= 0.7
-                elif airmass < 1.3:
-                    quality_factor *= 1.1
                 if planet.observed_tonight:
-                    quality_factor *= 0.3
+                    # Already observed — no additional scientific value.
+                    # Return 0 reward to align cumulative reward with the unique-observation grader.
+                    reward = 0.0
+                    info["action_type"] = "observe"
+                    info["planet_name"] = str(planet.pl_name)
+                    info["reward_components"] = {
+                        "base": 0.0,
+                        "quality": 0.0,
+                        "reason": "already_observed",
+                    }
+                    self.planets.at[action_target, "times_observed"] += 1
+                else:
+                    base_reward = float(planet.priority_score) * 10.0
+                    quality_factor = 1.0
 
-                raw = base_reward * quality_factor
+                    if self.weather_state == 1:
+                        quality_factor *= 0.7
+                    if alt < 45:
+                        quality_factor *= 0.6
+                    elif alt > 70:
+                        quality_factor *= 1.2
+                    if airmass > 2.0:
+                        quality_factor *= 0.7
+                    elif airmass < 1.3:
+                        quality_factor *= 1.1
 
-                # Deadline bonus/penalty
-                deadline_mult = 1.0
-                if pd.notna(planet.get("deadline_time")):
-                    dl = pd.to_datetime(planet.deadline_time)
-                    deadline_mult = 1.3 if self.current_time <= dl else 0.5
-                elif planet.get("soft_deadline_step") is not None:
-                    cutoff = planet["soft_deadline_step"]
-                    deadline_mult = 1.3 if self.step_count <= cutoff else 0.5
+                    raw = base_reward * quality_factor
 
-                raw *= deadline_mult
-                reward = raw / REWARD_SCALE
+                    # Deadline bonus/penalty
+                    deadline_mult = 1.0
+                    if pd.notna(planet.get("deadline_time")):
+                        dl = pd.to_datetime(planet.deadline_time)
+                        deadline_mult = 1.3 if self.current_time <= dl else 0.5
+                    elif planet.get("soft_deadline_step") is not None:
+                        cutoff = planet["soft_deadline_step"]
+                        deadline_mult = 1.3 if self.step_count <= cutoff else 0.5
 
-                self.planets.at[action_target, "observed_tonight"] = True
-                self.planets.at[action_target, "times_observed"] += 1
+                    raw *= deadline_mult
+                    reward = raw / REWARD_SCALE
 
-                # Track hard-task deadline satisfaction
-                if (
-                    self.deadline_step_cutoff is not None
-                    and planet.get("soft_deadline_step") is not None
-                    and self.step_count <= self.deadline_step_cutoff
-                ):
-                    self.deadlines_met_before_cutoff += 1
+                    self.planets.at[action_target, "observed_tonight"] = True
+                    self.planets.at[action_target, "times_observed"] += 1
 
-                info["action_type"] = "observe"
-                info["planet_name"] = str(planet.pl_name)
-                info["altitude"] = round(alt, 2)
-                info["priority"] = int(planet.priority_score)
-                info["reward_components"] = {
-                    "base": round(base_reward / REWARD_SCALE, 4),
-                    "quality": round(quality_factor, 4),
-                    "deadline_mult": round(deadline_mult, 4),
-                    "normalised": round(reward, 4),
-                }
+                    # Track hard-task deadline satisfaction
+                    if (
+                        self.deadline_step_cutoff is not None
+                        and planet.get("soft_deadline_step") is not None
+                        and self.step_count <= self.deadline_step_cutoff
+                    ):
+                        self.deadlines_met_before_cutoff += 1
+
+                    info["action_type"] = "observe"
+                    info["planet_name"] = str(planet.pl_name)
+                    info["altitude"] = round(alt, 2)
+                    info["priority"] = int(planet.priority_score)
+                    info["reward_components"] = {
+                        "base": round(base_reward / REWARD_SCALE, 4),
+                        "quality": round(quality_factor, 4),
+                        "deadline_mult": round(deadline_mult, 4),
+                        "normalised": round(reward, 4),
+                    }
             else:
                 reward = -15.0 / REWARD_SCALE
                 info["action_type"] = "invalid"
@@ -216,11 +231,12 @@ class _TelescopeCore:
         # Termination
         if self.current_time >= self.sunrise or self.step_count >= self.max_steps:
             self.done = True
-            # End-of-night missed-deadline penalty
+            # End-of-night missed-deadline penalty — only for targets that were
+            # actually reachable (visible at some point during the episode).
             for _, planet in self.planets.iterrows():
                 if pd.notna(planet.get("deadline_time")) and not planet.observed_tonight:
                     dl = pd.to_datetime(planet.deadline_time)
-                    if dl <= self.current_time:
+                    if dl <= self.current_time and planet.get("was_visible_tonight", False):
                         reward -= float(planet.priority_score) * 5.0 / REWARD_SCALE
 
         self.episode_reward += reward

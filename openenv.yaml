@@ -5,6 +5,7 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 7860
+url: https://huggingface.co/spaces/Cosmosatom/telescope-scheduler
 tags:
   - scheduling
   - astronomy
