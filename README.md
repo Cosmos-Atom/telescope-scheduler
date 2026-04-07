@@ -22,6 +22,21 @@ An AI agent must decide which of 20 exoplanet targets to observe each night, bal
 
 ---
 
+## Problem Statement
+
+Every clear night at Mauna Kea Observatory, astronomers face a hard combinatorial problem: **which of dozens of exoplanet targets should the telescope observe, and in what order?**
+
+Each decision involves trade-offs that no simple rule can solve:
+- A high-priority target may be rising — worth waiting for, or is another target setting?
+- Clouds are rolling in — observe now at lower quality, or wait for a clear window?
+- Three targets have hard observation deadlines tonight — but observing all three means missing higher-priority targets
+
+This is a real scheduling problem that professional observatories solve with human experts and heuristic software. This environment asks: **can an LLM agent learn to do it?**
+
+The agent controls a telescope for one observing night (4.5–11.5 hours depending on task). At each 15-minute timestep it chooses one of 20 confirmed exoplanet targets to observe, or waits. Reward is shaped by scientific priority, atmospheric quality (airmass), weather state, and deadline urgency — exactly the factors a real telescope operator weighs.
+
+---
+
 ## Environment Overview
 
 Each episode simulates one observing night (sunset to sunrise). At every 15-minute timestep the agent observes a planet (or waits), accumulating a reward based on:
