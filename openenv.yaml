@@ -1,0 +1,17 @@
+spec_version: 1
+name: telescope-scheduler
+description: "Autonomous exoplanet observation scheduling at Mauna Kea Observatory — balance scientific priority, airmass quality, stochastic weather, and time-sensitive deadlines."
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
+tags:
+  - scheduling
+  - astronomy
+  - reinforcement-learning
+  - real-world
+  - openenv
+tasks:
+  - easy
+  - medium
+  - hard
