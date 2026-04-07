@@ -105,9 +105,10 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 
 
 def run_task(task_id: str) -> float:
+    _EPS = 1e-4
     rewards: List[float] = []
     steps_taken = 0
-    score = 0.0
+    score = _EPS  # never 0.0 — validator requires score strictly in (0, 1)
 
     log_start(task=task_id, model=MODEL_NAME or "unknown")
     try:
@@ -142,8 +143,12 @@ def run_task(task_id: str) -> float:
                 steps_taken = step
                 log_step(step=step, action=target, reward=reward, done=result.done, error=error)
 
-            final_state = env.state()
-            score = compute_grade(task_id, final_state)
+            try:
+                final_state = env.state()
+                score = compute_grade(task_id, final_state)
+            except Exception as exc:
+                print(f"[WARN] env.state() failed: {exc} — using fallback score", flush=True)
+                score = _EPS
     finally:
         success = score >= SUCCESS_SCORE_THRESHOLD
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
