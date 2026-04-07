@@ -83,11 +83,6 @@ pip install -r requirements.txt
 ### 2. Run the server
 
 ```bash
-PYTHONPATH=telescope_env/:telescope_env/server/ uvicorn telescope_env.server.app:app --port 7860 --reload
-```
-
-Or from inside `telescope_env/`:
-```bash
 PYTHONPATH=.:server/ uvicorn server.app:app --port 7860 --reload
 ```
 
@@ -99,7 +94,7 @@ export MODEL_NAME="Qwen/Qwen3-8B"
 export HF_TOKEN="hf_..."
 export ENV_BASE_URL="http://localhost:7860"
 
-python telescope_env/inference.py
+python inference.py
 ```
 
 Expected output (Qwen/Qwen3-8B baseline):
@@ -121,7 +116,7 @@ Expected output (Qwen/Qwen3-8B baseline):
 ### 4. Docker
 
 ```bash
-docker build -t telescope-scheduler telescope_env/
+docker build -t telescope-scheduler .
 docker run -p 7860:7860 telescope-scheduler
 ```
 
@@ -130,7 +125,7 @@ docker run -p 7860:7860 telescope-scheduler
 ## File Structure
 
 ```
-telescope_env/
+/  (repo root)
 ├── Dockerfile               # Root Dockerfile for HF Space / docker build
 ├── README.md
 ├── __init__.py
