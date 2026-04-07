@@ -67,14 +67,16 @@ def compute_grade(task_id: str, state) -> float:
       hard   — deadline_score: 3 soft-deadline targets
                priority_score: 133 = oracle value for 18 steps greedy-deadline policy
     """
+    _EPS = 1e-4  # scores must be strictly within (0, 1) per OpenEnv validator
     if task_id == "easy":
-        return round(min(state.n_observed_tonight / 20.0, 1.0), 4)
+        raw = min(state.n_observed_tonight / 20.0, 1.0)
     elif task_id == "medium":
-        return round(min(state.total_priority_observed / 182.0, 1.0), 4)
+        raw = min(state.total_priority_observed / 182.0, 1.0)
     else:  # hard
         deadline_score = min(getattr(state, "deadlines_met_before_cutoff", 0) / 3.0, 1.0)
         priority_score = min(state.total_priority_observed / 133.0, 1.0)
-        return round(0.6 * deadline_score + 0.4 * priority_score, 4)
+        raw = 0.6 * deadline_score + 0.4 * priority_score
+    return round(max(_EPS, min(raw, 1.0 - _EPS)), 4)
 
 
 DEBUG = True
